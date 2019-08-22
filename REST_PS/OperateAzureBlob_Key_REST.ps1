@@ -218,6 +218,7 @@ function Delete-BlobFromAzure {
 $StorageAccount = "YourStorageAccountName"
 $containerName = "YourContainerName"
 $stAccountKey = "YourStorageAccountKey"
+$targetFolderPath = "YourFolder"
 
 $result = List-BlobFromAzure-XML -storageAccountName $StorageAccount `
     -storageAccountKey $stAccountKey -containerName $containerName
@@ -226,13 +227,13 @@ foreach ($item in $result.EnumerationResults.Blobs.Blob.Name) {
     Write-OutPut "$item"
 }
 
-$blobFileName = "YourBlobFileName"
+$blobFileName = "YourBlobFileNameToBeDownloaded"
 Download-BlobFromAzure -storageAccountName $StorageAccount -storageAccountKey $stAccountKey `
-        -containerName $containerName -blobName $blobFileName -targetFolderPath "C:\Users\v-hoxian\LISAv2"
+        -containerName $containerName -blobName $blobFileName -targetFolderPath $targetFolderPath
 
 Download-AllBlobsFromAzure -storageAccountName $StorageAccount -storageAccountKey $stAccountKey `
-        -containerName $containerName -targetFolderPath "C:\Users\v-hoxian\LISAv2"
+        -containerName $containerName -targetFolderPath $targetFolderPath
 
-$blobFileName = "YourBlobFileName"
+$blobFileName = "YourBlobFileNameToBeDeleted"
 Delete-BlobFromAzure -storageAccountName $StorageAccount -storageAccountKey $stAccountKey `
         -containerName $containerName -blobName $blobFileName
