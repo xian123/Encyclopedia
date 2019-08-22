@@ -71,6 +71,10 @@ function Run-InvokeRestMethod {
     $xMsDate = [DateTime]::UtcNow.ToString('r')
     if ($targetFolderPath) {
         $targetFilePath = Join-Path -Path $targetFolderPath -ChildPath $blobName
+        $parentOfTargetFilePath = Split-Path -Path $targetFilePath
+        if (!(Test-Path $parentOfTargetFilePath)) {
+            New-Item -Path $parentOfTargetFilePath -ItemType Directory -Force | Out-Null
+        }
     }
 
     $headers = @{
@@ -139,17 +143,24 @@ function Download-BlobFromAzure {
             "Download $blob successfully"
         }
     } else {
-        foreach ($blob in $blobName.split(",")) {
-            if ($result.EnumerationResults.Blobs.Blob | ? {$_.name -eq $blob}) {
-            "Find the $blob and start to download it from $storageAccountName"
-            } else {
-                "Failed to download the $blob on $storageAccountName because it doesn't exist"
-                continue
+        $allBlobsInAzure = @()
+        foreach ($blobWithParentPath in $result.EnumerationResults.Blobs.Blob.Name) {
+            $blobWithoutParentPath = $blobWithParentPath.split("/")
+            $blobWithoutParentPath = $blobWithoutParentPath[$blobWithoutParentPath.Length-1]
+            foreach ($blob in $blobName.split(",")) {
+                if ($blob -eq $blobWithoutParentPath) {
+                    $url = "https://$($StorageAccountName).blob.core.windows.net/$($ContainerName)/$($blobWithParentPath)$SASToken"
+                    Run-InvokeRestMethod -blobName $blobWithParentPath -httpAction "GET" -targetFolderPath $targetFolderPath -url $url
+                    "Download $blob successfully"
+                }
             }
+            $allBlobsInAzure += $blobWithoutParentPath
+        }
 
-            $url = "https://$($StorageAccountName).blob.core.windows.net/$($ContainerName)/$($blob)$SASToken"
-            Run-InvokeRestMethod -blobName $blob -httpAction "GET" -targetFolderPath $targetFolderPath -url $url
-            "Download $blob successfully"
+        foreach ($blob in $blobName.split(",")) {
+            if ($blob -NotIn $allBlobsInAzure) {
+                "Failed to download the $blob on $storageAccountName because it doesn't exist"
+            }
         }
     }
 }
@@ -181,17 +192,24 @@ function Delete-BlobFromAzure {
             "Delete $blob successfully"
         }
     } else {
-        foreach ($blob in $blobName.split(",")) {
-            if ($result.EnumerationResults.Blobs.Blob | ? {$_.name -eq $blob}) {
-            "Find the $blob and start to delete it from $storageAccountName"
-            } else {
-                "Failed to delete the $blob on $storageAccountName because it doesn't exist"
-                continue
+        $allBlobsInAzure = @()
+        foreach ($blobWithParentPath in $result.EnumerationResults.Blobs.Blob.Name) {
+            $blobWithoutParentPath = $blobWithParentPath.split("/")
+            $blobWithoutParentPath = $blobWithoutParentPath[$blobWithoutParentPath.Length-1]
+            foreach ($blob in $blobName.split(",")) {
+                if ($blob -eq $blobWithoutParentPath) {
+                    $url = "https://$($StorageAccountName).blob.core.windows.net/$($ContainerName)/$($blobWithParentPath)$SASToken"
+                    Run-InvokeRestMethod -blobName $blobWithParentPath -httpAction "DELETE" -url $url
+                    "Delete $blob successfully"
+                }
             }
+            $allBlobsInAzure += $blobWithoutParentPath
+        }
 
-            $url = "https://$($StorageAccountName).blob.core.windows.net/$($ContainerName)/$($blob)$SASToken"
-            Run-InvokeRestMethod -blobName $blob -httpAction "DELETE" -url $url
-            "Delete $blob successfully"
+        foreach ($blob in $blobName.split(",")) {
+            if ($blob -NotIn $allBlobsInAzure) {
+                "Failed to delete the $blob on $storageAccountName because it doesn't exist"
+            }
         }
     }
 }
