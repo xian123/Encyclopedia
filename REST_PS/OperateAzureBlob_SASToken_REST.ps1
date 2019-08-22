@@ -1,6 +1,6 @@
 
 
-function Run-Invoke-RestMethod {
+function Run-InvokeRestMethod {
     param (
         [string]$blobName,
 
@@ -41,7 +41,7 @@ function Run-Invoke-RestMethod {
 }
 
 # List all the blob files in a specified container
-function List-BlobFromAzure-XML {
+function List-BlobFromAzure {
     param (
         [Parameter(Mandatory)]
         [string]$storageAccountName,
@@ -54,7 +54,7 @@ function List-BlobFromAzure-XML {
     )
 
     $url = "https://$storageAccountName.blob.core.windows.net/$($containerName)/$SASToken&restype=container&comp=list"
-    $result = Run-Invoke-RestMethod -httpAction "GET" -url $url -contentType 'application/xml'
+    $result = Run-InvokeRestMethod -httpAction "GET" -url $url -contentType 'application/xml'
     return $result
 }
 
@@ -77,7 +77,7 @@ function Download-BlobFromAzure {
         [string]$targetFolderPath
     )
 
-    $result = List-BlobFromAzure-XML -storageAccountName $storageAccountName `
+    $result = List-BlobFromAzure -storageAccountName $storageAccountName `
         -SASToken $SASToken -containerName $containerName
 
     if ($result.EnumerationResults.Blobs.Blob | ? {$_.name -eq $blobName}) {
@@ -88,7 +88,7 @@ function Download-BlobFromAzure {
     }
 
     $url = "https://$($StorageAccountName).blob.core.windows.net/$($ContainerName)/$($BlobName)$SASToken"
-    Run-Invoke-RestMethod -blobName $BlobName -httpAction "GET" -targetFolderPath $targetFolderPath -url $url
+    Run-InvokeRestMethod -blobName $BlobName -httpAction "GET" -targetFolderPath $targetFolderPath -url $url
 }
 
 # Delete the specified blob file in a container
@@ -107,7 +107,7 @@ function Delete-BlobFromAzure {
         [string]$SASToken
     )
 
-    $result = List-BlobFromAzure-XML -storageAccountName $storageAccountName `
+    $result = List-BlobFromAzure -storageAccountName $storageAccountName `
         -SASToken $SASToken -containerName $containerName
 
     if ($result.EnumerationResults.Blobs.Blob | ? {$_.name -eq $blobName}) {
@@ -118,7 +118,7 @@ function Delete-BlobFromAzure {
     }
 
     $url = "https://$($StorageAccountName).blob.core.windows.net/$($ContainerName)/$($BlobName)$SASToken"
-    Run-Invoke-RestMethod -blobName $BlobName -httpAction "DELETE" -url $url
+    Run-InvokeRestMethod -blobName $BlobName -httpAction "DELETE" -url $url
 }
 
 #############################################################################################
@@ -128,7 +128,7 @@ $containerName = "YourContainerName"
 $targetFolderPath = "YourFolder"
 $SASToken = "YourSASToke"
 
-$result = List-BlobFromAzure-XML -StorageAccountName $storageAccount -SASToken $SASToken -containerName $containerName
+$result = List-BlobFromAzure -StorageAccountName $storageAccount -SASToken $SASToken -containerName $containerName
 Write-OutPut "The blobs in ${containerName}:"
 foreach ($item in $result.EnumerationResults.Blobs.Blob.Name) {
     Write-OutPut "    $item"
